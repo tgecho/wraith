@@ -1,5 +1,5 @@
-import Editor from "./editor/Editor.svelte";
+import Main from "./Main.svelte";
 
 export function main(target: HTMLElement) {
-  return new Editor({ target });
+  return new Main({ target });
 }

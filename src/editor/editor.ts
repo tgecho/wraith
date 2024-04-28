@@ -5,16 +5,16 @@ import {
   defaultMarkdownParser,
   defaultMarkdownSerializer,
 } from "prosemirror-markdown";
-import { exampleSetup } from "./setup.ts";
+import { setup } from "./setup.ts";
 
 function createState(content: string) {
   return EditorState.create({
     doc: defaultMarkdownParser.parse(content) || undefined,
-    plugins: exampleSetup({ schema }),
+    plugins: setup({ schema }),
   });
 }
 
-export class Editor {
+export class EditorControl {
   private view: EditorView;
 
   constructor(target: HTMLElement, initialContent: string) {
