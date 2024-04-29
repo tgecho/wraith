@@ -35,6 +35,10 @@
     outline: none;
   }
 
+  .editor :global(.ProseMirror :first-child) {
+    margin-top: 0;
+  }
+
   @keyframes pulse {
     0%,
     100% {

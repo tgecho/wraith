@@ -27,5 +27,6 @@
   }
   .right {
     flex: 1 1 33%;
+    border-left: 1px dashed #ccc;
   }
 </style>

@@ -1,91 +1,107 @@
 <script lang="ts">
-  import { Decoration, DecorationSet } from "prosemirror-view";
-  import {
-    fromMarkdown,
-    toMarkdown,
-    type EditorControl,
-  } from "../editor/editor";
+  import { debounce } from "lodash-es";
+  import { type EditorControl } from "../editor/editor";
+  import { loadActions } from "./actions";
   import { AiConnection } from "./ai";
-  import { Node } from "prosemirror-model";
-  import {
-    NodeSelection,
-    Plugin,
-    Selection,
-    TextSelection,
-  } from "prosemirror-state";
+  import { replace } from "./replacement";
   export let editor: EditorControl;
 
   const ai = new AiConnection();
+  let editing = -1;
 
-  function isCompleteBlockSelection(selection: Selection): boolean {
-    const { $from, $to } = selection;
-    const parentsAreBlock = $from.parent.isBlock && $to.parent.isBlock;
-    const isAtStart = $from.parentOffset === 0;
-    const isAtEnd = $to.parentOffset === $to.parent.content.size;
-    return Boolean(parentsAreBlock && isAtStart && isAtEnd);
+  function runAction(prompt: string) {
+    replace(ai, editor, prompt).catch(console.error);
   }
 
-  async function onClick() {
-    const selection = editor.selection();
-    // @ts-ignore I don't know why this seems to work, or how to do it better,
-    // but I have a Fragment and need a Node
-    const selectionContent = selection.content().content as Node;
-    const selectionText = toMarkdown(selectionContent);
-    const request = ai.chat([
-      {
-        role: "system",
-        content: `You always fulfill the user's requests concisely. Input and output are markdown. Avoid commentary.`,
-      },
-      {
-        role: "user",
-        content: `Convert "${selectionText}" to uppercase`,
-      },
-    ]);
+  let actions = loadActions();
 
-    const id = (Date.now() + Math.random()).toString();
-    editor.update((tr) =>
-      tr.setMeta("decorations", [
-        {
-          add: Decoration.inline(selection.from, selection.to, {
-            id,
-            block: isCompleteBlockSelection(selection).toString(),
-            class: "pending",
-          }),
-        },
-      ]),
-    );
-    let result = await request;
-    result = result?.replace(/(\n\s*)+/g, "\n\n") || null;
-    const pending = editor.getPending(id);
-    if (pending) {
-      let replacement =
-        (result && fromMarkdown(result)) || editor.createNode("");
-      const isBlock = JSON.parse(pending.type.attrs.block);
-      // TODO: I think we can do a better job of detecting when the beginning or
-      // end are inline and merging with the before/after nodes appropriately.
-      if (!isBlock) {
-        replacement = editor.createNode(replacement.textContent);
-      }
-
-      editor.update((tr) =>
-        tr
-          .setMeta("decorations", [{ remove: id }])
-          .replaceRangeWith(
-            isBlock ? pending.from - 1 : pending.from,
-            pending.to,
-            replacement,
-          ),
-      );
-    }
-  }
+  const saveActions = debounce(function saveActions() {
+    console.log("saving actions", actions);
+    localStorage.setItem("wraith_actions", JSON.stringify(actions));
+  });
 </script>
 
 <div class="actions">
-  <button on:click={onClick}>Hello</button>
+  <h2>Prompts</h2>
+  {#each actions as action, index}
+    {#if index === editing}
+      <div class="action editing">
+        <input bind:value={action.label} on:input={saveActions} />
+        <textarea bind:value={action.prompt} on:input={saveActions} rows={3} />
+        <div class="edit-buttons">
+          <button
+            on:click={() =>
+              (actions = actions.filter((_, index) => index !== editing))}
+            >🗑</button
+          >
+          <button on:click={() => (editing = -1)}>Done</button>
+        </div>
+      </div>
+    {:else}
+      <div class="action">
+        <button
+          class="run"
+          on:click={() => runAction(action.prompt)}
+          title={action.prompt}>{action.label}</button
+        >
+        <button class="edit" on:click={() => (editing = index)}>⚙</button>
+      </div>
+    {/if}
+  {/each}
+  <button
+    class="add"
+    on:click={() => {
+      actions = actions.concat({
+        label: "Label",
+        prompt: `Rewrite this: "{selection}"`,
+      });
+      editing = actions.length - 1;
+      saveActions();
+    }}>Add</button
+  >
 </div>
 
 <style>
+  h2 {
+    margin: 0 0.25rem 0.25rem;
+  }
+  button {
+    cursor: pointer;
+  }
+
   .actions {
+    overflow: auto;
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .action {
+    padding: 0.25rem;
+    display: flex;
+  }
+
+  .run {
+    flex: 1;
+  }
+
+  .action.editing {
+    flex-direction: column;
+  }
+  .edit-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .action input,
+  .action textarea {
+    width: 100%;
+  }
+
+  .add {
+    margin: 0.25rem;
+    align-self: start;
   }
 </style>
