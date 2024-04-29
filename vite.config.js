@@ -7,4 +7,9 @@ export default defineConfig({
       preprocess: vitePreprocess(),
     }),
   ],
+  server: {
+    proxy: {
+      "/v1": "http://localhost:11434",
+    },
+  },
 });

@@ -8,6 +8,7 @@ import { Schema } from "prosemirror-model";
 
 import { buildKeymap } from "./keymap.ts";
 import { buildInputRules } from "./inputrules.ts";
+import { decorations } from "./decorations.ts";
 
 export { buildKeymap, buildInputRules };
 
@@ -25,6 +26,7 @@ export function setup(options: {
   history?: boolean;
 }) {
   let plugins = [
+    decorations(),
     buildInputRules(options.schema),
     keymap(buildKeymap(options.schema, options.mapKeys)),
     keymap(baseKeymap),

@@ -1,19 +1,21 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { EditorControl } from "./editor.ts";
+  import { debounce } from "lodash-es";
 
   let editorNode: HTMLDivElement;
   export let editor: EditorControl;
 
+  function save() {
+    localStorage.setItem("wraith_content", editor.content);
+  }
+
   onMount(() => {
-    editor = new EditorControl(
-      editorNode,
-      `# Hello, world!
-
-*This is a test*
-
-- A list`,
-    );
+    editor = new EditorControl({
+      target: editorNode,
+      initialContent: localStorage.getItem("wraith_content") || "",
+      onChange: debounce(save, 500, { maxWait: 4000 }),
+    });
   });
 </script>
 
@@ -22,7 +24,7 @@
 <style>
   .editor {
     display: flex;
-    flex: 1;
+    height: 100vh;
   }
   .editor :global(.ProseMirror) {
     /* Make sure line width is capped at 60em, but nicely centered, with the
@@ -31,5 +33,18 @@
     flex: 1;
     overflow: auto;
     outline: none;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      background-color: #12f33f;
+    }
+    50% {
+      background-color: #e2f32b;
+    }
+  }
+  .editor :global(.ProseMirror .pending) {
+    animation: pulse 1s infinite;
   }
 </style>
