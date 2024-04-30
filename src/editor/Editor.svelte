@@ -1,18 +1,26 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { EditorControl } from "./editor.ts";
   import { debounce } from "lodash-es";
 
   let editorNode: HTMLDivElement;
-  export let editor: EditorControl;
+  export let editor: EditorControl | undefined;
+  export let path: string;
 
-  function getPath() {
-    return document.location.hash.slice(1).trim();
+  async function initEditor(path: string) {
+    editor?.destroy();
+    editor = undefined;
+    const initialContent = await fetch(`/files/${path}`).then(
+      (r) => (r.ok && r.text()) || "",
+    );
+    editor = new EditorControl({
+      target: editorNode,
+      initialContent,
+      onChange: debounce(save, 500, { maxWait: 4000 }),
+    });
   }
 
   async function save() {
-    const path = getPath();
-    if (path) {
+    if (editor && path) {
       await fetch(`/files/${path}`, {
         method: "PUT",
         body: editor.content,
@@ -22,18 +30,17 @@
     }
   }
 
-  onMount(async () => {
-    const initialContent = await fetch(`/files/${getPath()}`).then(
-      (r) => (r.ok && r.text()) || "",
-    );
-    editor = new EditorControl({
-      target: editorNode,
-      initialContent,
-      onChange: debounce(save, 500, { maxWait: 4000 }),
-    });
-  });
+  $: {
+    if (path) {
+      console.log("Path changed", path);
+      initEditor(path);
+    }
+  }
 </script>
 
+{#if !editor}
+  <div class="editor">Editor loading...</div>
+{/if}
 <div class="editor" bind:this={editorNode} />
 
 <style>

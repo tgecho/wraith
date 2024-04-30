@@ -4,9 +4,10 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 
-const OPENAPI_SERVER =
-  process.env.OPENAPI_SERVER || "http://zaphod.local:11434";
-const DOC_ROOT = process.env.DOC_ROOT || path.join(homedir(), "wraith_docs");
+// TODO: Add a way to set a custom openai model/api key
+const OPENAI_HOST = process.env.OPENAI_HOST || "http://zaphod.local:11434";
+const CONTENT_ROOT =
+  process.env.CONTENT_ROOT || path.join(homedir(), "wraith_docs");
 
 const CustomEndpointsPlugin = {
   name: "custom-endpoints",
@@ -14,11 +15,11 @@ const CustomEndpointsPlugin = {
     server.middlewares.use("/files", async (req, res, next) => {
       try {
         if (req.url === "/" && req.method === "GET") {
-          await mkdir(DOC_ROOT, { recursive: true });
-          const files = await readdir(DOC_ROOT);
+          await mkdir(CONTENT_ROOT, { recursive: true });
+          const files = await readdir(CONTENT_ROOT);
           return res.end(JSON.stringify(files));
         } else {
-          const filePath = path.join(DOC_ROOT, req.url);
+          const filePath = path.join(CONTENT_ROOT, req.url);
 
           if (req.method === "GET") {
             try {
@@ -78,7 +79,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/v1": {
-        target: OPENAPI_SERVER,
+        target: OPENAI_HOST,
         hostRewrite: true,
       },
     },

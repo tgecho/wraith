@@ -9,7 +9,9 @@
   import { AiConnection } from "./ai";
   import { replace } from "./replacement";
   import { onMount } from "svelte";
+
   export let editor: EditorControl;
+  export let path: string;
 
   const ai = new AiConnection();
   let editing = -1;
@@ -29,7 +31,12 @@
 </script>
 
 <div class="actions">
-  <h2>Prompts</h2>
+  <div class="files">
+    <h2>{path}</h2>
+    <a href="./">⇽ Back to files</a>
+  </div>
+
+  <h3>Prompts</h3>
   {#each actions as action, index}
     {#if index === editing}
       <div class="action editing">
@@ -70,8 +77,12 @@
 </div>
 
 <style>
-  h2 {
-    margin: 0 0.25rem 0.25rem;
+  .files {
+    margin: 0rem 0rem 1rem;
+  }
+  h2,
+  h3 {
+    margin: 0.25rem 0;
   }
   button {
     cursor: pointer;
