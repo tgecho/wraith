@@ -6,14 +6,29 @@
   let editorNode: HTMLDivElement;
   export let editor: EditorControl;
 
-  function save() {
-    localStorage.setItem("wraith_content", editor.content);
+  function getPath() {
+    return document.location.hash.slice(1).trim();
   }
 
-  onMount(() => {
+  async function save() {
+    const path = getPath();
+    if (path) {
+      await fetch(`/files/${path}`, {
+        method: "PUT",
+        body: editor.content,
+      });
+    } else {
+      console.error("No path specified");
+    }
+  }
+
+  onMount(async () => {
+    const initialContent = await fetch(`/files/${getPath()}`).then(
+      (r) => (r.ok && r.text()) || "",
+    );
     editor = new EditorControl({
       target: editorNode,
-      initialContent: localStorage.getItem("wraith_content") || "",
+      initialContent,
       onChange: debounce(save, 500, { maxWait: 4000 }),
     });
   });

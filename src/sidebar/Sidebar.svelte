@@ -1,9 +1,14 @@
 <script lang="ts">
   import { debounce } from "lodash-es";
   import { type EditorControl } from "../editor/editor";
-  import { loadActions } from "./actions";
+  import {
+    type Action,
+    loadActions,
+    saveActions as undebouncedSaveActions,
+  } from "./actions";
   import { AiConnection } from "./ai";
   import { replace } from "./replacement";
+  import { onMount } from "svelte";
   export let editor: EditorControl;
 
   const ai = new AiConnection();
@@ -13,12 +18,14 @@
     replace(ai, editor, prompt).catch(console.error);
   }
 
-  let actions = loadActions();
+  let actions: Action[] = [];
+  onMount(async () => {
+    actions = await loadActions();
+  });
 
   const saveActions = debounce(function saveActions() {
-    console.log("saving actions", actions);
-    localStorage.setItem("wraith_actions", JSON.stringify(actions));
-  });
+    undebouncedSaveActions(actions);
+  }, 1000);
 </script>
 
 <div class="actions">
