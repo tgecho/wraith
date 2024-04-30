@@ -30,9 +30,10 @@
         <textarea bind:value={action.prompt} on:input={saveActions} rows={3} />
         <div class="edit-buttons">
           <button
-            on:click={() =>
-              (actions = actions.filter((_, index) => index !== editing))}
-            >🗑</button
+            on:click={() => {
+              actions = actions.filter((_, index) => index !== editing);
+              saveActions();
+            }}>🗑</button
           >
           <button on:click={() => (editing = -1)}>Done</button>
         </div>
@@ -53,7 +54,7 @@
     on:click={() => {
       actions = actions.concat({
         label: "Label",
-        prompt: `Rewrite this: "{selection}"`,
+        prompt: `Rewrite this: {selection}`,
       });
       editing = actions.length - 1;
       saveActions();
@@ -74,12 +75,12 @@
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
 
   .action {
-    padding: 0.25rem;
     display: flex;
+    gap: 0.25rem;
   }
 
   .run {
@@ -101,7 +102,6 @@
   }
 
   .add {
-    margin: 0.25rem;
     align-self: start;
   }
 </style>

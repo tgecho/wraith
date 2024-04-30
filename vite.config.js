@@ -9,7 +9,10 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      "/v1": "http://localhost:11434",
+      "/v1": {
+        target: "http://localhost:11434",
+        hostRewrite: true,
+      },
     },
   },
 });

@@ -6,15 +6,6 @@ import {
 } from "../editor/editor.ts";
 import { AiConnection } from "./ai.ts";
 import { Node } from "prosemirror-model";
-import { Selection } from "prosemirror-state";
-
-function isCompleteBlockSelection(selection: Selection): boolean {
-  const { $from, $to } = selection;
-  const parentsAreBlock = $from.parent.isBlock && $to.parent.isBlock;
-  const isAtStart = $from.parentOffset === 0;
-  const isAtEnd = $to.parentOffset === $to.parent.content.size;
-  return Boolean(parentsAreBlock && isAtStart && isAtEnd);
-}
 
 const REPLACEMENTS: Record<
   string,
@@ -45,7 +36,7 @@ export async function replace(
   const request = ai.chat([
     {
       role: "system",
-      content: `You always fulfill the user's requests concisely. Input and output are markdown. Avoid commentary.`,
+      content: `You always fulfill the user's requests concisely. Input is markdown. Return valid markdown. Do not add new quotation marks. Do not acknowledge the request. Avoid commentary.`,
     },
     {
       role: "user",
@@ -60,32 +51,56 @@ export async function replace(
       {
         add: Decoration.inline(selection.from, selection.to, {
           id,
-          block: isCompleteBlockSelection(selection).toString(),
           class: "pending",
         }),
       },
     ]),
   );
-  let result = await request;
-  result = result?.replace(/(\n\s*)+/g, "\n\n") || null;
+  const result = await request;
+  console.log("result", result);
   const pending = editor.getPending(id);
   if (pending) {
-    let replacement = (result && fromMarkdown(result)) || editor.createNode("");
-    const isBlock = JSON.parse(pending.type.attrs.block);
-    // TODO: I think we can do a better job of detecting when the beginning or
-    // end are inline and merging with the before/after nodes appropriately.
-    if (!isBlock) {
-      replacement = editor.createNode(replacement.textContent);
-    }
+    editor.update((tr) => {
+      let updated = tr.setMeta("decorations", [{ remove: id }]);
 
-    editor.update((tr) =>
-      tr
-        .setMeta("decorations", [{ remove: id }])
-        .replaceRangeWith(
-          isBlock ? pending.from - 1 : pending.from,
+      let replacement =
+        (result && fromMarkdown(result)) || editor.createNode("");
+
+      const inline =
+        !atBlockStart(tr.doc, pending.from) || !atBlockEnd(tr.doc, pending.to);
+      if (inline) {
+        replacement = editor.createNode(replacement.textContent);
+      }
+
+      const stillSelected =
+        tr.selection.to === pending.to && tr.selection.from === pending.from;
+      if (stillSelected) {
+        updated = updated.replaceSelectionWith(replacement);
+      } else {
+        updated = updated.replaceRangeWith(
+          pending.from,
           pending.to,
           replacement,
-        ),
-    );
+        );
+      }
+
+      if (!inline) {
+        // clean up extra newlines added by injecting new block nodes from markdown
+        const nodeBefore = tr.doc.nodeAt(pending.from - 1);
+        if (nodeBefore?.content.size === 0) {
+          updated = updated.delete(pending.from - 1, pending.from);
+        }
+      }
+
+      return updated;
+    });
   }
+}
+
+function atBlockStart(doc: Node, position: number) {
+  return doc.resolve(position).parentOffset === 0;
+}
+function atBlockEnd(doc: Node, position: number) {
+  const pos = doc.resolve(position);
+  return pos.parentOffset >= pos.parent.content.size;
 }
