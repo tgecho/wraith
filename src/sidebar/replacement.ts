@@ -36,7 +36,7 @@ export async function replace(
   const request = ai.chat([
     {
       role: "system",
-      content: `You always fulfill the user's requests concisely. Input is markdown. Return valid markdown. Do not add new quotation marks. Do not acknowledge the request. Avoid commentary.`,
+      content: `You always fulfill the user's requests concisely. Return valid markdown. Do not acknowledge the prompt. Do not add comments.`,
     },
     {
       role: "user",
