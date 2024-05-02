@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
-import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { homedir } from "node:os";
 import path from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
@@ -71,12 +71,7 @@ export default ({ mode }) => {
   };
 
   return defineConfig({
-    plugins: [
-      svelte({
-        preprocess: vitePreprocess(),
-      }),
-      CustomEndpointsPlugin,
-    ],
+    plugins: [svelte(), CustomEndpointsPlugin],
     server: {
       proxy: {
         "/v1": {

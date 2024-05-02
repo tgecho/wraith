@@ -41,7 +41,8 @@
     {#if index === editing}
       <div class="action editing">
         <input bind:value={action.label} on:input={saveActions} />
-        <textarea bind:value={action.prompt} on:input={saveActions} rows={3} />
+        <textarea bind:value={action.prompt} on:input={saveActions} rows={3}
+        ></textarea>
         <div class="edit-buttons">
           <button
             on:click={() => {

@@ -41,7 +41,7 @@
 {#if !editor}
   <div class="editor">Editor loading...</div>
 {/if}
-<div class="editor" bind:this={editorNode} />
+<div class="editor" bind:this={editorNode}></div>
 
 <style>
   .editor {
