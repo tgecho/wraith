@@ -44,10 +44,10 @@
     flex-direction: column;
   }
   .left {
-    flex: 1 1 75%;
+    flex: 1 1 80%;
   }
   .right {
-    flex: 1 1 33%;
+    flex: 1 1 20%;
     border-left: 1px dashed #ccc;
   }
   .pick {
