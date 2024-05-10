@@ -1,27 +1,11 @@
 import { Decoration } from "prosemirror-view";
-import {
-  fromMarkdown,
-  toMarkdown,
-  type EditorControl,
-} from "../editor/editor.ts";
+import { fromMarkdown, type EditorControl } from "../editor/editor.ts";
 import { AiConnection } from "./ai.ts";
 import { Node } from "prosemirror-model";
 
-const REPLACEMENTS: Record<
-  string,
-  (editor: EditorControl, param?: string) => string
-> = {
-  selection: (editor) => {
-    const selection = editor.selection();
-    // @ts-ignore I don't know why this seems to work, or how to do it better,
-    // but I have a Fragment and need a Node
-    const selectionContent = selection.content().content as Node;
-    return toMarkdown(selectionContent);
-  },
-  document: (editor) => {
-    return editor.content;
-  },
-};
+import * as replacementFns from "./replacements.ts";
+type ReplacementFn = (editor: EditorControl, param?: string) => string;
+const REPLACEMENTS: Record<string, ReplacementFn> = replacementFns;
 
 export async function replace(
   ai: AiConnection,
@@ -29,9 +13,21 @@ export async function replace(
   prompt: string,
 ) {
   console.log("rawPrompt", prompt);
-  const hydratedPrompt = prompt.replace(/\{(\w+)\}/g, (raw, key) => {
-    return REPLACEMENTS[key]?.(editor) ?? raw;
-  });
+  const hydratedPrompt = prompt.replace(
+    /\{ *(\w+)(?:\[(-?\d*\.\.-?\d*)\])? *}/g,
+    (raw, tag, range) => {
+      let result = raw;
+      const replace = REPLACEMENTS[tag];
+      if (replace) {
+        result = replace(editor);
+        if (range) {
+          const [start, end] = range.split("..").map(Number);
+          result = result.slice(start || 0, end || undefined);
+        }
+      }
+      return result;
+    },
+  );
   console.log("hydratedPrompt", hydratedPrompt);
   const request = ai.chat([
     {
@@ -86,7 +82,7 @@ export async function replace(
 
       if (!inline) {
         // clean up extra newlines added by injecting new block nodes from markdown
-        const nodeBefore = tr.doc.nodeAt(pending.from - 1);
+        const nodeBefore = tr.doc.nodeAt(Math.max(0, pending.from - 1));
         if (nodeBefore?.content.size === 0) {
           updated = updated.delete(pending.from - 1, pending.from);
         }

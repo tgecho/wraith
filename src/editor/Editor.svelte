@@ -23,7 +23,7 @@
     if (editor && path) {
       await fetch(`/files/${path}`, {
         method: "PUT",
-        body: editor.content,
+        body: editor.content(),
       });
     } else {
       console.error("No path specified");

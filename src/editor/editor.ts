@@ -1,5 +1,5 @@
-import { EditorState, Plugin, Transaction } from "prosemirror-state";
-import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
+import { EditorState, Transaction } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import {
   schema,
   defaultMarkdownParser,
@@ -50,12 +50,12 @@ export class EditorControl {
     this.view.destroy();
   }
 
-  get content() {
-    return toMarkdown(this.view.state.doc);
-  }
-
-  set content(content: string) {
-    this.view.updateState(createState(content));
+  content(start = 0, end: number = this.view.state.doc.content.size) {
+    const slice = this.view.state.doc.slice(start, end);
+    // @ts-ignore I don't know why this seems to work, or how to do it better,
+    // but I have a Fragment and need a Node
+    const content = slice.content as Node;
+    return toMarkdown(content);
   }
 
   selection() {

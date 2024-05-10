@@ -7,7 +7,7 @@
     saveActions as undebouncedSaveActions,
   } from "./actions";
   import { AiConnection } from "./ai";
-  import { replace } from "./replacement";
+  import { replace } from "./replace";
   import { onMount } from "svelte";
 
   export let editor: EditorControl;
