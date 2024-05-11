@@ -7,8 +7,9 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 export default ({ mode }) => {
   const env = { ...process.env, ...loadEnv(mode, process.cwd()) };
 
-  const CONTENT_ROOT =
-    env.VITE_CONTENT_ROOT || path.join(homedir(), "wraith_docs");
+  let CONTENT_ROOT = env.VITE_CONTENT_ROOT || "~/wraith_docs";
+  console.log("CONTENT_ROOT", CONTENT_ROOT);
+  CONTENT_ROOT = CONTENT_ROOT.replace("~", homedir());
 
   const CustomEndpointsPlugin = {
     name: "custom-endpoints",
