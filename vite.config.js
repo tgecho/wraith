@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { homedir } from "node:os";
 import path from "node:path";
+import fs from "node:fs/promises";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 
 export default ({ mode }) => {
@@ -19,7 +20,17 @@ export default ({ mode }) => {
           if (req.url === "/" && req.method === "GET") {
             await mkdir(CONTENT_ROOT, { recursive: true });
             const files = await readdir(CONTENT_ROOT);
-            return res.end(JSON.stringify(files));
+            const withStats = await Promise.all(
+              files.map(async (name) => {
+                const stats = await fs.stat(path.join(CONTENT_ROOT, name));
+                return {
+                  name,
+                  time: stats.mtime.getTime(),
+                };
+              }),
+            );
+            withStats.sort((a, b) => b.time - a.time);
+            return res.end(JSON.stringify(withStats));
           } else {
             const filePath = path.join(CONTENT_ROOT, req.url);
 

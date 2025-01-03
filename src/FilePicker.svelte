@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { timeAgo } from "./util/timeAgo";
 
   let files: string[] | undefined;
   onMount(async () => {
@@ -24,8 +25,15 @@
   {#if files}
     <ul>
       {#each files as file}
-        {#if file.endsWith(".md")}
-          <li><a href="#{file}">{file}</a></li>
+        {#if file.name.endsWith(".md")}
+          <li>
+            <a href="#{file.name}">{file.name}</a>
+            <time
+              datetime={new Date(file.time).toISOString()}
+              title={new Date(file.time).toLocaleString()}
+              >({timeAgo(new Date(file.time))})</time
+            >
+          </li>
         {/if}
       {/each}
     </ul>
@@ -48,6 +56,10 @@
   }
   li {
     margin: 0.5em 0;
+  }
+  time {
+    font-size: 0.8em;
+    color: #666;
   }
   form {
     display: flex;
